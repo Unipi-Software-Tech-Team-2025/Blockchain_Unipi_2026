@@ -13,3 +13,4 @@ states/
 # Optional
 .env
 .env.local
+hardhat_accounts.txt
