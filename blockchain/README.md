@@ -56,6 +56,11 @@ After setting the variable, you can run the deployment with the Sepolia network:
 npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
 ```
 ### Michalis comments
+First,
+`npm install`
+
+Then, to compile:
+`npx hardhat compile`
 
 To run tests: 
 `npx hardhat node` in one terminal, then
