@@ -114,4 +114,16 @@ describe("QA Tests: CertificatesManager", function () {
     }
     expect(errorThrown).to.be.true;
   });
+
+  it("6. Ο Admin πρέπει να μπορεί να απενεργοποιήσει και να επανενεργοποιήσει χρήστη", async function () {
+    let tx = await contract.deactivateUser(issuerWallet.address, { nonce: 3 });
+    await tx.wait();
+    let user = await contract.users(issuerWallet.address);
+    expect(user.active).to.be.false;
+
+    tx = await contract.reactivateUser(issuerWallet.address, { nonce: 4 });
+    await tx.wait();
+    user = await contract.users(issuerWallet.address);
+    expect(user.active).to.be.true;
+  });
 });

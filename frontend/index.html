@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertChain — Σύστημα Ψηφιακών Πιστοποιητικών</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="auth-wrap" id="view-login">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div>
+        <div class="brand-name">CertChain</div>
+        <div class="brand-sub">Ψηφιακά Πιστοποιητικά</div>
+      </div>
+    </div>
+    <div class="banner">
+      Η σύνδεση γίνεται με το Private Key του wallet σου (όχι email/κωδικό — η ταυτότητα είναι η blockchain διεύθυνσή σου). Χρειάζεται να τρέχει το τοπικό δίκτυο (<span class="mono">run_setup.bat</span>) στο <span class="mono">http://127.0.0.1:8545</span>.<br><br>
+      Δοκιμαστικοί λογαριασμοί από το seed script:<br>
+      Admin: <span class="mono">0xac09...2ff80</span><br>
+      Issuer: <span class="mono">0x59c6...78690d</span><br>
+      Holder: <span class="mono">0x7c85...15141b007a6</span><br>
+      Verifier: <span class="mono">0x8b3a...2edffba</span><br>
+      RevocationOfficer: <span class="mono">0x5de4...ab365a</span><br>
+      Auditor: <span class="mono">0x47e1...a34926a</span>
+    </div>
+    <form id="login-form">
+      <div class="field">
+        <label for="login-pk">Private Key</label>
+        <input type="password" id="login-pk" placeholder="0x..." required>
+      </div>
+      <button type="submit" class="btn btn-primary">Σύνδεση</button>
+    </form>
+    <div class="auth-switch"><a onclick="showView('register')">Πώς προστίθεται νέος χρήστης;</a></div>
+  </div>
+</div>
+
+<!-- ============ INFO: ΠΩΣ ΠΡΟΣΤΙΘΕΤΑΙ ΝΕΟΣ ΧΡΗΣΤΗΣ ============ -->
+<div class="auth-wrap" id="view-register" style="display:none;">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div>
+        <div class="brand-name">CertChain</div>
+        <div class="brand-sub">Ψηφιακά Πιστοποιητικά</div>
+      </div>
+    </div>
+    <p style="font-size:13.5px; line-height:1.6; color:var(--text-dim);">
+      Δεν υπάρχει self-service εγγραφή σε αυτό το σύστημα. Η προσθήκη νέου χρήστη γίνεται
+      αποκλειστικά από τον <strong>Admin</strong>, μέσα από την οθόνη «Χρήστες &amp; Ρόλοι»,
+      καταχωρώντας τη διεύθυνση (wallet address) του νέου χρήστη απευθείας στο Smart Contract.
+    </p>
+    <div class="auth-switch"><a onclick="showView('login')">← Πίσω στη Σύνδεση</a></div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div class="app" id="view-app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div>
+        <div class="brand-name">CertChain</div>
+        <div class="brand-sub">Ψηφιακά Πιστοποιητικά</div>
+      </div>
+    </div>
+    <nav id="nav-list"></nav>
+    <div class="sidebar-footer">
+      <div class="role-pill" id="sidebar-role">—</div>
+      <div class="user-name" id="sidebar-user">—</div>
+      <a class="nav-item" style="padding-left:0;" onclick="logout()">Αποσύνδεση</a>
+    </div>
+  </aside>
+  <main class="main" id="main-content"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

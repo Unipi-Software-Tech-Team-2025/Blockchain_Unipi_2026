@@ -60,6 +60,7 @@ contract CertificatesManager {
     event UserRegistered(address indexed userAddress, UserRole role, string name);
     event UserRoleUpdated(address indexed userAddress, UserRole newRole);
     event UserDeactivated(address indexed userAddress);
+    event UserReactivated(address indexed userAddress);
     
     event CertificateIssued(string indexed certificateId, address indexed issuer, address indexed holder, string fileHash);
     event CertificateRevoked(string indexed certificateId, address indexed revocationOfficer, string reason);
@@ -85,6 +86,11 @@ contract CertificatesManager {
 
     modifier onlyRevocationOfficer() {
         require(users[msg.sender].role == UserRole.RevocationOfficer, "Access denied: Requires Revocation Officer role.");
+        _;
+    }
+
+    modifier onlyVerifier() {
+        require(users[msg.sender].role == UserRole.Verifier, "Access denied: Requires Verifier role.");
         _;
     }
 
@@ -135,6 +141,14 @@ contract CertificatesManager {
         require(users[_userAddress].active, "User is already inactive.");
         users[_userAddress].active = false;
         emit UserDeactivated(_userAddress);
+    }
+
+    // API: PUT admin/reactivateUser/{userId}
+    function reactivateUser(address _userAddress) public onlyActiveUser onlyAdmin {
+        require(users[_userAddress].userAddress != address(0), "User does not exist.");
+        require(!users[_userAddress].active, "User is already active.");
+        users[_userAddress].active = true;
+        emit UserReactivated(_userAddress);
     }
 
     // ==========================================
@@ -190,7 +204,7 @@ contract CertificatesManager {
     }
 
     // API: POST verify/{certificateId}
-    function verifyCertificateById(string memory _certificateId) public returns (
+    function verifyCertificateById(string memory _certificateId) public onlyActiveUser returns (
         CertificateType certType,
         address issuer,
         address holder,
@@ -215,7 +229,7 @@ contract CertificatesManager {
     }
 
     // API: POST verify/{hash}
-    function verifyCertificateByHash(string memory _fileHash) public returns (
+    function verifyCertificateByHash(string memory _fileHash) public onlyActiveUser returns (
         string memory certificateId,
         CertificateStatus status
     ) {
