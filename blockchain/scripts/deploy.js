@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 
 async function main() {
   console.log("Starting Deployment & Automatic Seeding...\n");
@@ -29,6 +29,20 @@ async function main() {
   const contract = await factory.deploy();
   await contract.waitForDeployment();
   console.log(`Contract deployed at address: ${contract.target}`);
+
+  // Αυτόματη ενημέρωση του frontend/app.js με τη διεύθυνση του contract
+  try {
+    const appJsPath = "../frontend/app.js";
+    let appJsContent = await readFile(appJsPath, "utf-8");
+    appJsContent = appJsContent.replace(
+      /const CONTRACT_ADDRESS = "0x[a-fA-F0-9]{40}";/,
+      `const CONTRACT_ADDRESS = "${contract.target}";`
+    );
+    await writeFile(appJsPath, appJsContent, "utf-8");
+    console.log(`Auto-updated frontend/app.js with CONTRACT_ADDRESS: ${contract.target}`);
+  } catch (err) {
+    console.warn("Could not auto-update frontend/app.js:", err.message);
+  }
 
   // 2. Εγγραφή Χρηστών (Με ρητή διαχείριση Nonce)
   console.log("\nRegistering Users (Roles)...");
