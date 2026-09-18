@@ -228,6 +228,29 @@ contract CertificatesManager {
         return (cert.certType, cert.issuer, cert.holder, cert.issueDate, cert.expiryDate, currentStatus, cert.revocationReason);
     }
 
+    // Read-only certificate lookup for any active user (Issuer/Holder/RevocationOfficer/Auditor dashboards), no verification event
+    function getCertificateDetails(string memory _certificateId) public view onlyActiveUser returns (
+        CertificateType certType,
+        address issuer,
+        address holder,
+        uint256 issueDate,
+        uint256 expiryDate,
+        CertificateStatus status,
+        string memory revocationReason
+    ) {
+        require(bytes(certificates[_certificateId].certificateId).length != 0, "Certificate not found.");
+
+        Certificate storage cert = certificates[_certificateId];
+
+        // Dynamically check expiry
+        CertificateStatus currentStatus = cert.status;
+        if (!cert.revoked && cert.expiryDate > 0 && block.timestamp > cert.expiryDate) {
+            currentStatus = CertificateStatus.Expired;
+        }
+
+        return (cert.certType, cert.issuer, cert.holder, cert.issueDate, cert.expiryDate, currentStatus, cert.revocationReason);
+    }
+
     // API: POST verify/{hash}
     function verifyCertificateByHash(string memory _fileHash) public onlyActiveUser onlyVerifier returns (
         string memory certificateId,
