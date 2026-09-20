@@ -18,6 +18,10 @@ contract CertificatesManager {
     // ==========================================
     // STRUCTS
     // ==========================================
+    
+    /**
+     * @dev Structure representing a system user.
+     */
     struct User {
         address userAddress;
         string name; 
@@ -25,6 +29,9 @@ contract CertificatesManager {
         bool active;
     }
 
+    /**
+     * @dev Structure representing a digital certificate.
+     */
     struct Certificate {
         string certificateId;
         CertificateType certType;
@@ -69,6 +76,10 @@ contract CertificatesManager {
     // ==========================================
     // MODIFIERS
     // ==========================================
+    
+    /**
+     * @dev Restricts execution to users flagged as active.
+     */
     modifier onlyActiveUser() {
         require(users[msg.sender].active, "User is not active or not registered.");
         _;
@@ -102,8 +113,11 @@ contract CertificatesManager {
     // ==========================================
     // CONSTRUCTOR
     // ==========================================
+    
+    /**
+     * @dev Initializes the contract and sets the deployer as the initial Admin.
+     */
     constructor() {
-        // Deployer becomes the initial Admin
         users[msg.sender] = User({
             userAddress: msg.sender,
             name: "System Admin",
@@ -117,7 +131,12 @@ contract CertificatesManager {
     // USER MANAGEMENT (ADMIN ENDPOINTS)
     // ==========================================
     
-    // API: POST admin/createIssuer (and general register)
+    /**
+     * @dev Registers a new user into the system.
+     * @param _userAddress The blockchain address of the user.
+     * @param _name The physical name or institution name of the user.
+     * @param _role The assigned system role (e.g., Issuer, Holder).
+     */
     function registerUser(address _userAddress, string memory _name, UserRole _role) public onlyActiveUser onlyAdmin {
         require(!users[_userAddress].active, "User already exists and is active.");
         users[_userAddress] = User({
@@ -129,21 +148,31 @@ contract CertificatesManager {
         emit UserRegistered(_userAddress, _role, _name);
     }
 
-    // API: PUT admin/setRoles/{userId}
+    /**
+     * @dev Updates the role of an existing active user.
+     * @param _userAddress The blockchain address of the user.
+     * @param _newRole The new role to be assigned.
+     */
     function updateUserRole(address _userAddress, UserRole _newRole) public onlyActiveUser onlyAdmin {
         require(users[_userAddress].active, "User does not exist or is inactive.");
         users[_userAddress].role = _newRole;
         emit UserRoleUpdated(_userAddress, _newRole);
     }
 
-    // API: DELETE admin/deleteUser/{userId}
+    /**
+     * @dev Deactivates a user, preventing them from calling restricted functions.
+     * @param _userAddress The blockchain address of the user to deactivate.
+     */
     function deactivateUser(address _userAddress) public onlyActiveUser onlyAdmin {
         require(users[_userAddress].active, "User is already inactive.");
         users[_userAddress].active = false;
         emit UserDeactivated(_userAddress);
     }
 
-    // API: PUT admin/reactivateUser/{userId}
+    /**
+     * @dev Reactivates a previously deactivated user.
+     * @param _userAddress The blockchain address of the user to reactivate.
+     */
     function reactivateUser(address _userAddress) public onlyActiveUser onlyAdmin {
         require(users[_userAddress].userAddress != address(0), "User does not exist.");
         require(!users[_userAddress].active, "User is already active.");
@@ -155,7 +184,14 @@ contract CertificatesManager {
     // CERTIFICATE MANAGEMENT
     // ==========================================
 
-    // API: POST issuer/createCertificate
+    /**
+     * @dev Issues a new digital certificate.
+     * @param _certificateId The unique identifier of the certificate.
+     * @param _certType The classification of the certificate.
+     * @param _holder The blockchain address of the recipient.
+     * @param _fileHash The cryptographic hash of the actual certificate document.
+     * @param _expiryDate The timestamp when the certificate expires (0 if never).
+     */
     function issueCertificate(
         string memory _certificateId,
         CertificateType _certType,
@@ -179,7 +215,6 @@ contract CertificatesManager {
             revocationReason: ""
         });
 
-        // Update lookups
         hashToCertId[_fileHash] = _certificateId;
         holderCertificates[_holder].push(_certificateId);
         issuerCertificates[msg.sender].push(_certificateId);
@@ -190,7 +225,11 @@ contract CertificatesManager {
         emit CertificateIssued(_certificateId, msg.sender, _holder, _fileHash);
     }
 
-    // API: POST revocation/revokeCertificate/{certificateId}
+    /**
+     * @dev Revokes a specific certificate and records the reason.
+     * @param _certificateId The unique identifier of the certificate.
+     * @param _reason The justification for the revocation.
+     */
     function revokeCertificate(string memory _certificateId, string memory _reason) public onlyActiveUser onlyRevocationOfficer {
         require(bytes(certificates[_certificateId].certificateId).length != 0, "Certificate does not exist.");
         require(!certificates[_certificateId].revoked, "Certificate is already revoked.");
@@ -203,7 +242,17 @@ contract CertificatesManager {
         emit CertificateRevoked(_certificateId, msg.sender, _reason);
     }
 
-    // API: POST verify/{certificateId}
+    /**
+     * @dev Verifies a certificate by its ID and calculates dynamic expiration. Emits verification event.
+     * @param _certificateId The unique identifier of the certificate.
+     * @return certType The classification of the certificate.
+     * @return issuer The address of the issuing entity.
+     * @return holder The address of the recipient.
+     * @return issueDate The timestamp of issuance.
+     * @return expiryDate The timestamp of expiration.
+     * @return status The dynamically calculated current status (Active, Expired, Revoked).
+     * @return revocationReason The reason if the certificate was revoked.
+     */
     function verifyCertificateById(string memory _certificateId) public onlyActiveUser onlyVerifier returns (
         CertificateType certType,
         address issuer,
@@ -217,7 +266,6 @@ contract CertificatesManager {
         
         Certificate storage cert = certificates[_certificateId];
         
-        // Dynamically check expiry
         CertificateStatus currentStatus = cert.status;
         if (!cert.revoked && cert.expiryDate > 0 && block.timestamp > cert.expiryDate) {
             currentStatus = CertificateStatus.Expired;
@@ -228,7 +276,11 @@ contract CertificatesManager {
         return (cert.certType, cert.issuer, cert.holder, cert.issueDate, cert.expiryDate, currentStatus, cert.revocationReason);
     }
 
-    // Read-only certificate lookup for any active user (Issuer/Holder/RevocationOfficer/Auditor dashboards), no verification event
+    /**
+     * @dev Read-only certificate lookup for active users (dashboards). Does not emit verification events.
+     * @param _certificateId The unique identifier of the certificate.
+     * @return All certificate details including dynamically calculated status.
+     */
     function getCertificateDetails(string memory _certificateId) public view onlyActiveUser returns (
         CertificateType certType,
         address issuer,
@@ -242,7 +294,6 @@ contract CertificatesManager {
 
         Certificate storage cert = certificates[_certificateId];
 
-        // Dynamically check expiry
         CertificateStatus currentStatus = cert.status;
         if (!cert.revoked && cert.expiryDate > 0 && block.timestamp > cert.expiryDate) {
             currentStatus = CertificateStatus.Expired;
@@ -251,7 +302,12 @@ contract CertificatesManager {
         return (cert.certType, cert.issuer, cert.holder, cert.issueDate, cert.expiryDate, currentStatus, cert.revocationReason);
     }
 
-    // API: POST verify/{hash}
+    /**
+     * @dev Verifies a certificate by the cryptographic hash of its file.
+     * @param _fileHash The hash of the digital document.
+     * @return certificateId The ID linked to this hash.
+     * @return status The current status of the certificate.
+     */
     function verifyCertificateByHash(string memory _fileHash) public onlyActiveUser onlyVerifier returns (
         string memory certificateId,
         CertificateStatus status
@@ -267,29 +323,47 @@ contract CertificatesManager {
     // GETTERS (For Backend Pagination & Filtering)
     // ==========================================
 
-    // API: GET holder/certificates/{holderId}
+    /**
+     * @dev Retrieves all certificate IDs owned by a specific holder.
+     * @param _holder The address of the certificate holder.
+     * @return An array of certificate IDs.
+     */
     function getHolderCertificates(address _holder) public view returns (string[] memory) {
         return holderCertificates[_holder];
     }
     
-    // API: GET certificates/GetByIssuer/{issuerId}
+    /**
+     * @dev Retrieves all certificate IDs issued by a specific issuer.
+     * @param _issuer The address of the issuer.
+     * @return An array of certificate IDs.
+     */
     function getIssuerCertificates(address _issuer) public view returns (string[] memory) {
         return issuerCertificates[_issuer];
     }
 
-    // API Helper for GET certificates/all
-    // Returns total count so backend can calculate pages, then backend fetches specific indices.
+    /**
+     * @dev Returns the total number of issued certificates (useful for pagination).
+     * @return Total count.
+     */
     function getTotalCertificatesCount() public view returns (uint256) {
         return allCertificateIds.length;
     }
 
-    // Returns a specific certificate ID by its index
+    /**
+     * @dev Retrieves a certificate ID by its index in the global array.
+     * @param index The array index.
+     * @return The certificate ID at the specified index.
+     */
     function getCertificateIdByIndex(uint256 index) public view returns (string memory) {
         require(index < allCertificateIds.length, "Index out of bounds");
         return allCertificateIds[index];
     }
     
-    // Auditor Dashboard Stats
+    /**
+     * @dev Retrieves system-wide statistics for auditors.
+     * @return _totalIssued The total number of issued certificates.
+     * @return _totalRevoked The total number of revoked certificates.
+     */
     function getSystemStats() public view onlyActiveUser onlyAuditor returns (uint256 _totalIssued, uint256 _totalRevoked) {
         return (totalIssued, totalRevoked);
     }
