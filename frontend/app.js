@@ -15,6 +15,7 @@ const CONTRACT_ABI = [
   "function issueCertificate(string _certificateId, uint8 _certType, address _holder, string _fileHash, uint256 _expiryDate)",
   "function revokeCertificate(string _certificateId, string _reason)",
   "function verifyCertificateById(string _certificateId) returns (uint8 certType, address issuer, address holder, uint256 issueDate, uint256 expiryDate, uint8 status, string revocationReason)",
+  "function getCertificateDetails(string _certificateId) view returns (uint8 certType, address issuer, address holder, uint256 issueDate, uint256 expiryDate, uint8 status, string revocationReason)",
   "function verifyCertificateByHash(string _fileHash) returns (string certificateId, uint8 status)",
   "function getHolderCertificates(address _holder) view returns (string[])",
   "function getIssuerCertificates(address _issuer) view returns (string[])",
@@ -502,11 +503,12 @@ async function renderIssuerIssue() {
   });
 }
 
-// Παίρνει μια λίστα IDs και επιστρέφει πλήρη στοιχεία μέσω verifyCertificateById
-// (staticCall -> στιγμιαίο, χωρίς gas, χωρίς πραγματική συναλλαγή)
+// Παίρνει μια λίστα IDs και επιστρέφει πλήρη στοιχεία μέσω getCertificateDetails
+// (view function, ανοιχτή σε κάθε ενεργό χρήστη - όχι μόνο Verifier, σε αντίθεση
+// με verifyCertificateById/ByHash που πλέον απαιτούν ρητά ρόλο Verifier)
 async function loadCertsByIds(ids) {
   return Promise.all(ids.map(async (id) => {
-    const r = await signedContract().verifyCertificateById.staticCall(id);
+    const r = await signedContract().getCertificateDetails.staticCall(id);
     return {
       id: id, certType: Number(r.certType), issuer: r.issuer, holder: r.holder,
       issueDate: fmtDate(r.issueDate), expiryDate: fmtDate(r.expiryDate),
