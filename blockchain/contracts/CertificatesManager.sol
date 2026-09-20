@@ -279,7 +279,13 @@ contract CertificatesManager {
     /**
      * @dev Read-only certificate lookup for active users (dashboards). Does not emit verification events.
      * @param _certificateId The unique identifier of the certificate.
-     * @return All certificate details including dynamically calculated status.
+     * @return certType The classification of the certificate.
+     * @return issuer The address of the issuing entity.
+     * @return holder The address of the recipient.
+     * @return issueDate The timestamp of issuance.
+     * @return expiryDate The timestamp of expiration.
+     * @return status The dynamically calculated current status (Active, Expired, Revoked).
+     * @return revocationReason The reason if the certificate was revoked.
      */
     function getCertificateDetails(string memory _certificateId) public view onlyActiveUser returns (
         CertificateType certType,
