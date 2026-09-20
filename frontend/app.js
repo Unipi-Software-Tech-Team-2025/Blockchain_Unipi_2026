@@ -1,7 +1,5 @@
 /* =========================================================================
    ΣΥΝΔΕΣΗ ΜΕ ΤΟ ΠΡΑΓΜΑΤΙΚΟ SMART CONTRACT (ethers.js)
-   Δεν υπάρχει πια .NET API — το UI μιλάει απευθείας με το blockchain.
-   Χρειάζεται να τρέχει το τοπικό δίκτυο (run_setup.bat) στο 127.0.0.1:8545.
 ========================================================================= */
 const CONTRACT_ADDRESS = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707";
 const RPC_URL = "http://127.0.0.1:8545";
@@ -35,20 +33,20 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
 const roContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider); // read-only κλήσεις
 function signedContract() { return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, session.wallet); }
 
-// Η σειρά ΠΡΕΠΕΙ να ταιριάζει ακριβώς με τα enums μέσα στο CertificatesManager.sol
+
 const ROLE_NAMES = ["Admin", "Issuer", "Holder", "Verifier", "RevocationOfficer", "Auditor"];
 const CERT_TYPES = ["Σεμινάριο", "Επαγγελματική Πιστοποίηση", "Ακαδημαϊκή Βεβαίωση", "Άδεια"];
 const STATUS_NAMES = ["Active", "Expired", "Revoked"];
 function certTypeLabel(idx) { return CERT_TYPES[Number(idx)] ?? "Άγνωστο"; }
 
-// Υπολογισμός SHA-256 hash από πραγματικό αρχείο, εξ ολοκλήρου στον browser.
+
 async function computeFileHash(file) {
   const buf = await file.arrayBuffer();
   const digest = await crypto.subtle.digest("SHA-256", buf);
   return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Χάρτης address -> όνομα, για να δείχνουμε ονόματα αντί για ωμές διευθύνσεις.
+
 async function buildAddressNameMap() {
   const users = await loadAllUsers();
   const map = {};
@@ -61,8 +59,7 @@ function nameOrAddr(address, nameMap) {
   return n ? n + " (" + shortAddr(address) + ")" : shortAddr(address);
 }
 
-// Μετατροπή σφαλμάτων ethers/Solidity σε στοχευμένο μήνυμα στα ελληνικά.
-// Οι λέξεις-κλειδιά αντιστοιχούν ακριβώς στα require(...) του CertificatesManager.sol.
+
 const ERROR_TRANSLATIONS = [
   ["User is not active or not registered", "Αυτή η διεύθυνση δεν είναι καταχωρημένη ή ενεργή στο σύστημα."],
   ["Access denied: Requires Admin role", "Δεν έχεις δικαίωμα — αυτή η ενέργεια επιτρέπεται μόνο στον Admin."],
@@ -85,8 +82,7 @@ const ERROR_TRANSLATIONS = [
   ["insufficient funds", "Αυτός ο λογαριασμός δεν έχει καθόλου δοκιμαστικό ETH για να πληρώσει το κόστος της συναλλαγής. Ζήτησε από τον Admin να σου μεταφέρει ETH."],
 ];
 function friendlyError(err) {
-  // Το πραγματικό μήνυμα require() μπορεί να κρύβεται σε διαφορετικά σημεία
-  // ανάλογα με το πώς το ethers.js «τύλιξε» το σφάλμα.
+
   const raw = [
     err?.reason,
     err?.shortMessage,
@@ -128,7 +124,7 @@ function logout() {
 function shortAddr(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : "—"; }
 
 /* -------------------------------------------------------------------------
-   LOGIN — με Private Key αντί για email/κωδικό
+   LOGIN — με Private Key 
 ------------------------------------------------------------------------- */
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -275,10 +271,7 @@ function filterTable(sectionId) {
 }
 
 /* -------------------------------------------------------------------------
-   Βοηθητικό: το contract ΔΕΝ έχει "πάρε όλους τους χρήστες".
    Ανακατασκευάζουμε τη λίστα διαβάζοντας τα UserRegistered events (logs),
-   και μετά ρωτάμε το τρέχον status/ρόλο του καθενός (πιο αξιόπιστο από το
-   να ξαναπαίξουμε τα events με τη σειρά).
 ------------------------------------------------------------------------- */
 async function loadAllUsers() {
   const logs = await roContract.queryFilter(roContract.filters.UserRegistered());
@@ -364,7 +357,8 @@ async function generateWallet() {
     '</div>';
   showToast("Δημιουργήθηκε νέο wallet — μεταφορά δοκιμαστικού ETH...");
   try {
-    // Χωρίς λίγο ETH, ο νέος χρήστης δεν θα μπορεί να πληρώσει gas για καμία ενέργεια.
+
+    
     const tx = await session.wallet.sendTransaction({ to: w.address, value: ethers.parseEther("1") });
     await tx.wait();
     showToast("Το νέο wallet χρηματοδοτήθηκε με 1 δοκιμαστικό ETH.");
@@ -504,8 +498,6 @@ async function renderIssuerIssue() {
 }
 
 // Παίρνει μια λίστα IDs και επιστρέφει πλήρη στοιχεία μέσω getCertificateDetails
-// (view function, ανοιχτή σε κάθε ενεργό χρήστη - όχι μόνο Verifier, σε αντίθεση
-// με verifyCertificateById/ByHash που πλέον απαιτούν ρητά ρόλο Verifier)
 async function loadCertsByIds(ids) {
   return Promise.all(ids.map(async (id) => {
     const r = await signedContract().getCertificateDetails.staticCall(id);
