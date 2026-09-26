@@ -84,8 +84,14 @@ tests.
 > Σε νέο local Hardhat deployment η διεύθυνση μπορεί να αλλάξει. Το
 > deployment script ενημερώνει το contract address που χρησιμοποιείται
 > από το frontend.
+##Γρήγορη Εγκατάσταση
 
-## Βήματα Εγκατάστασης και Εκτέλεσης
+Για να τρέξει σε 2 βήματα η εφαρμογή ακολουθούμε τα εξής βήματα:
+
+1. Τρέχουμε το script `./blockchain/run_setup.bat`
+2. Ανοίγουμε το `./frontend/index.js`
+
+## Αναλυτικά Βήματα Εγκατάστασης και Εκτέλεσης
 
 ### 1. Εγκατάσταση εξαρτήσεων
 
@@ -120,22 +126,6 @@ npx hardhat run scripts/deploy.js --network localhost
 
 Το script πραγματοποιεί deployment του contract και αρχικοποιεί τα test
 δεδομένα.
-
-### 5. Εκκίνηση της Διεπαφής Χρήστη
-
-Μέσα στον φάκελο του frontend μπορεί να χρησιμοποιηθεί ένας απλός local
-HTTP server:
-
-``` bash
-python -m http.server 5500
-```
-
-Στη συνέχεια ανοίξτε στον browser:
-
-`http://localhost:5500`
-
-Η εφαρμογή συνδέεται με το local Hardhat network μέσω Ethers.js και
-χρησιμοποιεί το contract address της τρέχουσας εκτέλεσης.
 
 ## Τρόπος Εκτέλεσης Ελέγχων (QA & Security Audit)
 
